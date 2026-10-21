@@ -12,8 +12,12 @@ description: >
   Expressive", "upgrade / modernize my Android UI", "migrate MD2 to MD3", "glass in Flutter",
   "glass in React Native", "liquid glass in SwiftUI", or to audit an app's design-system and
   glass usage.
-user-invokable: true
+license: MIT
+user-invocable: true
 argument-hint: "[audit|upgrade|glass|theme|screen] [path, screen name, or URL]"
+metadata:
+  opencode/slash: "true"
+  opencode/autoinvoke: "true"
 ---
 
 # Material 3 Frosted — the Android 17 frosted-glass design system
@@ -56,9 +60,9 @@ python3 <skill-dir>/scripts/scan_ui.py <project-path> --format markdown
 ```
 
 If your agent exposes the skill's base directory (most do), use it as `<skill-dir>`. If it does
-not, the path is wherever the skill was copied — `find / -name SKILL.md -path '*material-3-frosted*'`
-locates it. When in doubt, read the files with an absolute path you resolved once, and pass the
-*target project* as the scanner argument.
+not, resolve it from the agent's skills directory (`~/.agents/skills/material-3-frosted`,
+`~/.gemini/config/skills/material-3-frosted`, …) or from where you copied the folder. When in
+doubt, resolve the absolute path once and pass the *target project* as the scanner argument.
 
 ---
 
@@ -70,7 +74,7 @@ override any "make it look cool" impulse.
 1. **Glass is a functional layer, not a content layer.** It belongs around controls and
    navigation, never under text the user must read. See §4.
 2. **Every glass surface has an opaque fallback.** Blur can be disabled by the system
-   (`WindowManager.isCrossWindowBlurEnabled()`), by battery saver, by the user's
+   (`windowManager.isCrossWindowBlurEnabled`), by battery saver, by the user's
    *Settings → Accessibility → Color & motion → Reduce blur effects* toggle, or by hardware
    limits. Design the non-blur state first; the blur is the enhancement.
 3. **Text on glass must keep its contrast.** Glass is tinted with a real surface colour
@@ -112,7 +116,7 @@ questions you can answer by reading the repo.
 
 ## 3. The workflow
 
-Four phases. **Do not skip Phase 1.** An upgrade without an inventory silently leaves 30% of
+Five phases (0–4). **Do not skip Phase 1.** An upgrade without an inventory silently leaves 30% of
 the app on the old design, which is exactly the failure this skill exists to prevent.
 
 ```
@@ -122,6 +126,10 @@ Phase 2  PLAN    → ordered workstreams, dependencies, risk, acceptance criteri
 Phase 3  BUILD   → implement in dependency order (theme → components → screens → glass)
 Phase 4  VERIFY  → build, test, screenshot, measure; close the report
 ```
+
+Phases 0–4 are platform-neutral. The Android gates in Phase 4 (`./gradlew`, lint, TalkBack,
+*Reduce blur effects*) apply to Android; for Flutter, React Native and SwiftUI use the checklist
+in that platform's reference and its own build/test commands.
 
 ### Phase 0 — Recon (read-only)
 
@@ -330,6 +338,7 @@ dependencies {
     // Override the version explicitly to get them — see "Version reality" below.
     implementation("androidx.compose.material3:material3:1.5.0-beta01")
     implementation("androidx.compose.material3:material3-adaptive-navigation-suite:1.5.0-beta01")
+    implementation("androidx.compose.material3.adaptive:adaptive:1.3.0")      // currentWindowAdaptiveInfo()
     implementation("androidx.compose.material3:material3-window-size-class")   // via BOM, 1.4.0 is fine
     implementation("androidx.activity:activity-compose:1.13.0")          // enableEdgeToEdge()
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.11.0")
@@ -338,6 +347,7 @@ dependencies {
     implementation("dev.chrisbanes.haze:haze:2.0.1")
     implementation("dev.chrisbanes.haze:haze-blur:2.0.1")
     implementation("dev.chrisbanes.haze:haze-blur-materials:2.0.1")        // HazeMaterials presets
+    implementation("dev.chrisbanes.haze:haze-blur-material3:2.0.1")       // HazeBlurStyle.Material3
     implementation("dev.chrisbanes.haze:haze-glass:2.0.1")                // refraction Glass
     implementation("dev.chrisbanes.haze:haze-glass-material3:2.0.1")      // Glass + M3 colours
 }
@@ -397,8 +407,8 @@ newer.
 | Lever | Change |
 |-------|--------|
 | Theme | `MaterialExpressiveTheme(colorScheme = …, motionScheme = MotionScheme.expressive(), …)` (needs 1.5.0-beta01) |
-| Colour | Dynamic colour on API 31+; `surfaceContainer*` roles instead of `surfaceVariant` |
-| Type | Use the 15 roles + emphasized variants; `titleLarge` 22sp/28sp SemiBold |
+| Colour | Dynamic colour on API 31+; `surfaceContainer*` roles for containers (`surfaceVariant` is not deprecated) |
+| Type | Use the 15 roles + emphasized variants; emphasized `titleLarge` is 22sp/28sp SemiBold |
 | Shape | Buttons/chips `full`; cards `medium`; sheets `extraLarge`; expressive `largeIncreased` (20dp) / `extraLargeIncreased` (32dp) for hero moments (needs 1.5.0-beta01) |
 | Motion | Springs via `MaterialTheme.motionScheme.defaultSpatialSpec()`; no more `tween(300)` for component state |
 | Components | On 1.5.0-beta01: `ButtonGroup`, `SplitButton`, `LoadingIndicator`, `ToggleButton`, `WavyProgressIndicator`. On 1.4.0: `SegmentedButton`, `Carousel`, `ShortNavigationBar`, `WideNavigationRail`, `SearchBar` |

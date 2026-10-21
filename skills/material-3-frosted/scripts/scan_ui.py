@@ -36,7 +36,7 @@ SKIP_DIRS = {
     ".cxx", "node_modules", "external", "generated",
 }
 
-SOURCE_EXTS = {".kt", ".java", ".xml", ".kts"}
+SOURCE_EXTS = {".kt", ".java", ".xml", ".kts", ".gradle"}
 COMPOSE_EXTS = {".kt"}
 
 # Off-scale dp values that should not appear outside of a token definition.
@@ -126,6 +126,25 @@ def grep(pattern: str, files: Iterable[tuple[Path, str]], limit: int = 40) -> li
     return hits
 
 
+def small_touch_targets(files: Iterable[tuple[Path, str]], limit: int = 20) -> list[str]:
+    """`.size(N.dp)` on an interactive element means its tap area is too small."""
+    size_rx = re.compile(r"\.size\s*\(\s*(?:[0-3]?\d)\s*\.dp\s*\)")
+    interactive_rx = re.compile(
+        r"clickable|combinedClickable|pointerInput|toggleable|selectable|"
+        r"IconButton|FloatingActionButton|Checkbox|Switch|RadioButton"
+    )
+    hits: list[str] = []
+    for path, text in files:
+        for i, line in enumerate(text.splitlines(), start=1):
+            if "Icon(" in line:
+                continue
+            if size_rx.search(line) and interactive_rx.search(line):
+                hits.append(f"{path}:{i}: {line.strip()[:160]}")
+                if len(hits) >= limit:
+                    return hits
+    return hits
+
+
 def unique(values: Iterable[str]) -> list[str]:
     seen, out = set(), []
     for v in values:
@@ -140,6 +159,45 @@ def unique(values: Iterable[str]) -> list[str]:
 # ---------------------------------------------------------------------------
 
 
+def catalog_versions(text: str) -> dict[str, str]:
+    """Map `group:artifact` -> version from a Gradle version catalog (libs.versions.toml)."""
+    version_aliases: dict[str, str] = {}
+    artifacts: dict[str, str] = {}
+    section = ""
+    for raw in text.splitlines():
+        line = raw.split("#", 1)[0].strip()
+        if not line:
+            continue
+        if line.startswith("["):
+            section = line.strip("[]").strip()
+            continue
+        if section == "versions":
+            m = re.match(r'([A-Za-z0-9_.-]+)\s*=\s*"([^"]+)"', line)
+            if m:
+                version_aliases[m.group(1)] = m.group(2)
+        elif section == "libraries":
+            m = re.match(r'([A-Za-z0-9_.-]+)\s*=\s*(.+)', line)
+            if not m:
+                continue
+            spec = m.group(2)
+            module = re.search(r'module\s*=\s*"([^"]+)"', spec)
+            artifact = module.group(1) if module else None
+            if artifact is None:
+                group = re.search(r'group\s*=\s*"([^"]+)"', spec)
+                name = re.search(r'name\s*=\s*"([^"]+)"', spec)
+                if group and name:
+                    artifact = f"{group.group(1)}:{name.group(1)}"
+            if artifact is None:
+                continue
+            direct = re.search(r'version\s*=\s*"([^"]+)"', spec)
+            ref = re.search(r'version\.ref\s*=\s*"([^"]+)"', spec)
+            if direct:
+                artifacts[artifact] = direct.group(1)
+            elif ref and ref.group(1) in version_aliases:
+                artifacts[artifact] = version_aliases[ref.group(1)]
+    return artifacts
+
+
 def collect_facts(root: Path) -> ProjectFacts:
     facts = ProjectFacts(root=str(root))
     files = list(iter_source_files(root))
@@ -148,6 +206,11 @@ def collect_facts(root: Path) -> ProjectFacts:
     xml_files = [(p, read_text(p)) for p in files if p.suffix == ".xml"]
     kts_files = [(p, read_text(p)) for p in files if p.suffix == ".kts"]
     gradle_files = [(p, read_text(p)) for p in files if p.name.endswith((".gradle", ".gradle.kts"))]
+    # A version catalog is where most modern projects keep every dependency.
+    catalog = root / "gradle" / "libs.versions.toml"
+    catalog_text = read_text(catalog) if catalog.exists() else ""
+    if catalog_text:
+        gradle_files.append((catalog, catalog_text))
 
     facts.kotlin_files = len(kt_files)
     facts.java_files = len(java_files)
@@ -160,7 +223,9 @@ def collect_facts(root: Path) -> ProjectFacts:
     gradle_all = "\n".join(t for _, t in gradle_files)
 
     facts.uses_compose = "androidx.compose" in kt_all or "androidx.compose" in gradle_all
-    facts.uses_material3_compose = "androidx.compose.material3" in kt_all
+    facts.uses_material3_compose = (
+        "androidx.compose.material3" in kt_all or "androidx.compose.material3" in gradle_all
+    )
     facts.uses_material_components = (
         "com.google.android.material" in kt_all
         or "com.google.android.material" in java_all
@@ -204,6 +269,19 @@ def collect_facts(root: Path) -> ProjectFacts:
     facts.activity_version = dep_version("androidx.activity:activity-compose", gradle_all)
     facts.haze_version = dep_version("dev.chrisbanes.haze:haze", gradle_all)
 
+    # Version catalogs declare the version once, under [versions]; resolve it here.
+    from_catalog = catalog_versions(catalog_text)
+    for attr, artifact in (
+        ("compose_bom", "androidx.compose:compose-bom"),
+        ("material3_version", "androidx.compose.material3:material3"),
+        ("material_components_version", "com.google.android.material:material"),
+        ("activity_version", "androidx.activity:activity-compose"),
+        ("haze_version", "dev.chrisbanes.haze:haze"),
+    ):
+        current = getattr(facts, attr)
+        if (not current or current[0].startswith("via BOM")) and artifact in from_catalog:
+            setattr(facts, attr, [from_catalog[artifact]])
+
     facts.compile_sdk = unique(facts.compile_sdk)
     facts.target_sdk = unique(facts.target_sdk)
     facts.min_sdk = unique(facts.min_sdk)
@@ -215,10 +293,13 @@ def collect_facts(root: Path) -> ProjectFacts:
 
     # Modules
     modules = []
-    settings = root / "settings.gradle.kts"
-    if settings.exists():
-        for m in re.finditer(r'include\s*\(\s*"([^"]+)"', read_text(settings)):
-            modules.append(m.group(1))
+    for name in ("settings.gradle.kts", "settings.gradle"):
+        settings = root / name
+        if not settings.exists():
+            continue
+        text = read_text(settings)
+        modules.extend(re.findall(r'include\s*\(\s*"([^"]+)"', text))
+        modules.extend(re.findall(r"include\s+['\"]([^'\"]+)['\"]", text))
     facts.modules = unique(modules)
 
     return facts
@@ -325,15 +406,7 @@ def analyze(root: Path, facts: ProjectFacts, max_hits: int = 40) -> list[Finding
         "Color.Black.copy(alpha=…) used as a card or surface background is a common MD2 habit; "
         "it stacks unpredictably and breaks contrast in dark mode.",
         grep(r"(Color\.(Black|White)\.copy\s*\(\s*alpha\s*=\s*0?\.\d+f?\s*\))", code, 20),
-        "Use surfaceContainer* roles and MaterialTheme.colorScheme.surfaceVariant alternatives.")
-
-    if facts.uses_material3_compose:
-        add("color.surfacevariant", "warning", "Color tokens",
-            "surfaceVariant is deprecated",
-            "Material 3 Expressive renamed the role to surfaceContainerHigh. Leaving surfaceVariant "
-            "in place makes the screen wrong in themes that override it.",
-            grep(r"\bsurfaceVariant\b", kt_files, 20),
-            "Replace with surfaceContainerHigh (or another surfaceContainer* role).")
+        "Use a surfaceContainer* role as the container colour.")
 
     if facts.uses_compose and "dynamicLightColorScheme" not in kt_all and "dynamicDarkColorScheme" not in kt_all:
         add_missing("color.dynamic.missing", "warning", "Color tokens",
@@ -367,8 +440,6 @@ def analyze(root: Path, facts: ProjectFacts, max_hits: int = 40) -> list[Finding
                 if value not in ON_GRID_DP:
                     off_grid.append(f"{path}:{i}: {line.strip()[:160]}")
                     break
-            if off_grid and off_grid[-1].startswith(path + ":"):
-                break
     add("shape.offgrid", "info", "Shape",
         "Off-scale corner radii",
         "Corner radii outside the Material shape scale make surfaces look accidental.",
@@ -405,7 +476,7 @@ def analyze(root: Path, facts: ProjectFacts, max_hits: int = 40) -> list[Finding
     add("a11y.touchtarget", "warning", "Accessibility",
         "Explicit small touch targets",
         "Interactive elements must be at least 48dp in both dimensions.",
-        grep(r"\.size\s*\(\s*(?:[0-3]?\d)\s*\.dp\s*\)", code, 20),
+        small_touch_targets(code),
         "Use Modifier.defaultMinSize(minWidth = 48.dp, minHeight = 48.dp) or "
         "Modifier.minimumInteractiveComponentSize().")
 

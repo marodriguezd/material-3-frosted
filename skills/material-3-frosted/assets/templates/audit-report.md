@@ -13,7 +13,7 @@
 |---|---|
 | **Overall score** | <X.X / 10> |
 | **Screens audited** | <N> |
-| **Critical defects (0–3)** | <N> |
+| **Critical defects (1–3)** | <N> |
 | **Warnings (4–6)** | <N> |
 | **Estimated effort** | <S / M / L> — <person-days> |
 | **Recommended sequence** | <one line> |
@@ -47,7 +47,7 @@ Legend — 9–10 compliant · 7–8 minor · 4–6 gap · 1–3 broken · N/A n
 
 ---
 
-## 3. Critical issues (score 0–3)
+## 3. Critical issues (score 1–3)
 
 ### 3.1 <Short title>
 
@@ -86,12 +86,12 @@ Ordered by dependency, not by screen.
 
 | # | Workstream | Files | Depends on | Risk | Acceptance criterion | Effort |
 |---|------------|-------|------------|------|---------------------|--------|
-| 1 | Foundation: BOM, SDK, theme, dynamic colour, edge-to-edge | | — | Low | App builds; dynamic colour on/off; light/dark | S |
-| 2 | Shared components | | 1 | Low | | M |
-| 3 | Layout & adaptive | | 1, 2 | Medium | Compact/Medium/Expanded reviewed | M |
-| 4 | Screen-by-screen | | 2, 3 | Medium | Every screen ≥ 8 | L |
-| 5 | Glass layer | | 4 | Medium | ≤ 3 surfaces/screen; opaque fallback | M |
-| 6 | Motion polish & hero moments | | 4 | Low | Reduced-motion path verified | S |
+| 0 | Foundation: BOM, SDK, theme, dynamic colour, edge-to-edge | | — | Low | App builds; dynamic colour on/off; light/dark | S |
+| 1 | Shared components | | 0 | Low | | M |
+| 2 | Layout & adaptive | | 0, 1 | Medium | Compact/Medium/Expanded reviewed | M |
+| 3 | Screen-by-screen | | 1, 2 | Medium | Every screen ≥ 8 | L |
+| 4 | Glass layer | | 3 | Medium | ≤ 3 surfaces/screen; opaque fallback | M |
+| 5 | Motion polish & hero moments | | 3 | Low | Reduced-motion path verified | S |
 
 ---
 

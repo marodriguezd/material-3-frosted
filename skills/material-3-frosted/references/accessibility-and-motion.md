@@ -12,9 +12,12 @@ Android exposes user preferences that must change the UI, not just be "considere
 | Setting | Where | How to detect |
 |---------|-------|---------------|
 | **Remove animations** (animation scale = 0) | Accessibility → Visual effects / Developer options → Animator duration scale | `ValueAnimator.areAnimatorsEnabled()` (API 26+) |
-| **Reduce blur effects** | Accessibility → Color & motion → *Reduce blur effects* (Android 17 / API 37) | `WindowManager.isCrossWindowBlurEnabled()` for window blur; for app-drawn blur, honour the same intent via a contrast fallback |
+| **Reduce blur effects** | Accessibility → Color & motion → *Reduce blur effects* (Android 17 / API 37) | `windowManager.isCrossWindowBlurEnabled` for window blur; for app-drawn blur, honour the same intent via a contrast fallback |
 | **Remove animations / reduce motion** | Accessibility → Visual effects | Same `areAnimatorsEnabled()` gate |
-| **High contrast / dark theme** | Settings / Accessibility | `isSystemInDarkTheme()`, `LocalContrast`/`Configuration.isNightModeActive` |
+| **Dark theme** | Settings → Display | `isSystemInDarkTheme()` / `Configuration.uiMode` |
+
+Android has no public *high-contrast* flag: do not read one. Meet the contrast ratios in §3
+instead, and test with the OEM's contrast setting enabled.
 
 **Treat "animation scale = 0" as "no animation", not "fast animation".** A 0 ms duration
 spring is still a spring: it can overshoot. Use an instant path.
@@ -28,8 +31,8 @@ val spec = if (animationsEnabled) {
 }
 ```
 
-Compose has a helper: `LocalMotionScheme` is theme-driven, but you still need the
-`areAnimatorsEnabled()` check for user-level animation scale.
+`MaterialTheme.motionScheme` is theme-driven, but you still need the `areAnimatorsEnabled()`
+check for the user-level animation scale.
 
 ---
 
@@ -38,21 +41,21 @@ Compose has a helper: `LocalMotionScheme` is theme-driven, but you still need th
 Windows can be blurred by the system only if blur is enabled. Query it:
 
 ```kotlin
-val blurEnabled = WindowManager.isCrossWindowBlurEnabled()   // API 31+ / 32+ stable
+val blurEnabled = windowManager.isCrossWindowBlurEnabled()   // API 31+
 ```
 
-`WindowManager.isCrossWindowBlurEnabled()` reflects both the system capability **and**
-user settings (including *Reduce blur effects* on Android 17). If it returns false, do not
-request `FLAG_BLUR_BEHIND` — the request is ignored anyway — and render the opaque fallback.
+`windowManager.isCrossWindowBlurEnabled()` reflects both the system capability **and** user
+settings (including *Reduce blur effects* on Android 17). If it returns false, do not request
+`FLAG_BLUR_BEHIND` — the request is ignored anyway — and render the opaque fallback.
 
 For **app-drawn** blur (Haze), the app is drawing pixels, so the system setting does not
 automatically stop it. Two options:
 
-1. **Recommended — respect the system's blur policy by reading the same secure setting.**
-   On Android 17 the *Reduce blur effects* toggle is surfaced to apps. Where the platform
-   exposes a public accessor, use it. Where it does not, treat "blur disabled" as a
-   **contrast requirement**: fall back to the opaque container whenever the user has
-   requested reduced transparency.
+1. **Treat "blur disabled" as a contrast requirement.** Android does not expose a public
+   accessor for the app-drawn *Reduce blur effects* toggle. Use
+   `windowManager.isCrossWindowBlurEnabled()` where window blur is involved, and otherwise
+   expose an in-app reduce-transparency preference (or follow the system's dark/high-contrast
+   state) and fall back to the opaque container.
 2. **Always ship the opaque fallback anyway.** Even if you cannot detect the setting, the
    app must be legible if blur is unavailable (low-end device, battery saver, screenshot,
    screen reader).
@@ -108,7 +111,7 @@ Pair with an icon, a shape change, or text.
 
 - Minimum **48dp × 48dp** for every interactive element.
 - `Modifier.minimumInteractiveComponentSize()` (Compose) or
-  `ViewCompat.setMinimumTouchTargetSize` / `android:minWidth|minHeight` (Views).
+  `android:minWidth` / `android:minHeight` plus a `TouchDelegate` (Views).
 - Icon buttons: give the *button* the 48dp box; the icon inside can be 24dp.
 - Glass chrome often shrinks visually (transparent padding). Keep the interactive box.
 - A 12dp gap between adjacent targets is enough; do not let glass margins eat it.
@@ -186,7 +189,11 @@ AnimatedVisibility(
 |-------------|-----|
 | `defaultSpatialSpec()` | Position/size changes: expand, collapse, sheet, nav |
 | `defaultEffectsSpec()` | Colour/alpha changes: fade, tint |
-| `defaultSpring()` | Direct spring-typed animations |
+| `fastSpatialSpec()` / `fastEffectsSpec()` | Frequent, small transitions (≤ 200 ms) |
+| `slowSpatialSpec()` / `slowEffectsSpec()` | Large surfaces, once-per-flow hero moments |
+
+For `animate*AsState` (which takes a spring, not a spec) use `spring(dampingRatio, stiffness)`
+with the values below.
 
 ### Choosing the right spring
 

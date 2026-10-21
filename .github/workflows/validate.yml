@@ -3,6 +3,7 @@ name: validate
 on:
   push:
     branches: [main]
+    tags: ["v*"]
   pull_request:
   workflow_dispatch:
 
@@ -54,6 +55,36 @@ jobs:
             echo "expected --fail-on critical to exit 2"; exit 1
           fi
 
+      # Groovy build files and version catalogs are the two places the scanner used to
+      # read nothing from: SDK levels came back empty and every project looked like it
+      # was on 1.4.0. This pins both behaviours.
+      - name: Fixture — Groovy + version catalog
+        run: |
+          set -e
+          F=/tmp/fixture-catalog
+          mkdir -p "$F/gradle" "$F/app"
+          printf "include ':app'\n" > "$F/settings.gradle"
+          cat > "$F/app/build.gradle" <<'EOF'
+          android { compileSdk 37; defaultConfig { targetSdk 37; minSdk 26 } }
+          EOF
+          cat > "$F/gradle/libs.versions.toml" <<'EOF'
+          [versions]
+          material3 = "1.5.0-beta01"
+          [libraries]
+          material3 = { module = "androidx.compose.material3:material3", version.ref = "material3" }
+          EOF
+          OUT="$(python3 skills/material-3-frosted/scripts/scan_ui.py "$F" --format text)"
+          echo "$OUT"
+          echo "$OUT" | grep -q "compileSdk: 37" || { echo "FAIL: Groovy compileSdk not parsed"; exit 1; }
+          echo "$OUT" | grep -q "targetSdk: 37" || { echo "FAIL: Groovy targetSdk not parsed"; exit 1; }
+          if echo "$OUT" | grep -q "hides the Expressive APIs"; then
+            echo "FAIL: catalog material3 1.5.0-beta01 was not resolved"; exit 1
+          fi
+          sed -i 's/1.5.0-beta01/1.4.0/' "$F/gradle/libs.versions.toml"
+          OUT="$(python3 skills/material-3-frosted/scripts/scan_ui.py "$F" --format text)"
+          echo "$OUT" | grep -q "hides the Expressive APIs" \
+            || { echo "FAIL: catalog material3 1.4.0 was not detected"; exit 1; }
+
       - name: JSON output is valid
         run: |
           python3 skills/material-3-frosted/scripts/scan_ui.py . --format json \
@@ -98,12 +129,15 @@ jobs:
       - name: Prove the harness compiled something
         run: |
           set -e
+          # Class counts alone can be met by a single file; count the staged
+          # sources too, so a path that resolves to nothing still fails.
           for m in expressive stable; do
+            src=$(find "verify/$m/build/generated/examples" -name '*.kt' | wc -l)
             n=$(find "verify/$m/build" -name '*.class' \
                   -not -name 'R.class' -not -name 'R$*.class' -not -name 'BuildConfig.class' | wc -l)
-            echo "$m: $n classes"
-            if [ "$n" -lt 20 ]; then
-              echo "FAIL: $m produced $n classes — the harness compiled nothing"
+            echo "$m: $src staged sources, $n classes"
+            if [ "$src" -lt 5 ] || [ "$n" -lt 20 ]; then
+              echo "FAIL: $m staged $src sources and produced $n classes — the harness compiled nothing"
               exit 1
             fi
           done
@@ -128,12 +162,18 @@ jobs:
       - name: Typecheck
         run: npx tsc --noEmit
 
+      # The staging copy is what gets typechecked. If it drifts from the shipped
+      # skill, the green build proves the wrong code.
+      - name: Examples match the shipped copies
+        working-directory: .
+        run: diff -r skills/material-3-frosted/assets/examples/react-native verify/react-native/examples
+
       - name: Prove the harness typechecked something
         run: |
           set -e
           n=$(find examples -name '*.tsx' -o -name '*.ts' | wc -l)
           echo "example files: $n"
-          if [ "$n" -lt 4 ]; then
+          if [ "$n" -lt 5 ]; then
             echo "FAIL: only $n example files present"
             exit 1
           fi

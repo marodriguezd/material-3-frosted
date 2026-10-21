@@ -1,6 +1,6 @@
 {
   "name": "material-3-frosted",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Android 17 frosted-glass design system: translucent blurred chrome (Haze 2 Glass & Blur, platform window blur) over Material 3 Expressive, with placement rules, fallbacks and accessibility.",
   "author": {
     "name": "marodriguezd"

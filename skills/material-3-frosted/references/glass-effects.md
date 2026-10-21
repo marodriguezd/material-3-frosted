@@ -256,8 +256,8 @@ Blur can disappear at any moment. Design for that.
 
 | Cause | Signal | What to do |
 |-------|--------|------------|
-| Device doesn't support window blur | `WindowManager.isCrossWindowBlurEnabled() == false` | Use an opaque surface |
-| Battery saver / system state | `isCrossWindowBlurEnabled()` flips at runtime | Listen and swap |
+| Device doesn't support window blur | `windowManager.isCrossWindowBlurEnabled == false` | Use an opaque surface |
+| Battery saver / system state | `isCrossWindowBlurEnabled` flips at runtime | Listen and swap |
 | User's *Reduce blur effects* toggle | System stops applying blur | Provide an in-app preference and/or an opaque fallback |
 | GPU too weak | System disables blurs | Opaque fallback |
 | Haze native backdrop unavailable | Falls back to source capture, then to no effect | Style's `fallbackColorEffect` |
@@ -325,7 +325,7 @@ blurs*.
 
 Android exposes *Settings → Accessibility → Color & motion → Reduce blur effects* (Android 16
 QPR2+). **There is no public API to read that toggle.** The signal you can read is
-`WindowManager.isCrossWindowBlurEnabled()`, which covers system-level disabling (battery saver,
+`windowManager.isCrossWindowBlurEnabled`, which covers system-level disabling (battery saver,
 user preference, hardware). For app-drawn effects (Haze), you must:
 
 1. Provide your own in-app preference (e.g. *Settings → Display → Reduce transparency*), and/or

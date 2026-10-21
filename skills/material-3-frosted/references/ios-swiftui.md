@@ -37,8 +37,9 @@ Two habits that prevent the usual problems:
 
 - **Stroke the edge.** A 0.5 pt `strokeBorder` at ~8 % of the primary colour is what makes the
   surface read as having thickness. Without it, light-on-light content makes the bar disappear.
-- **Never make the tint fully transparent.** With Reduce Transparency on, the tint *is* the
-  surface.
+- **Do not rely on the tint for Reduce Transparency.** That setting takes an opaque
+  `Color(.secondarySystemBackground)` branch; the tint only modulates the glass on the normal
+  path, so keep it subtle and never make legibility depend on it.
 
 ---
 

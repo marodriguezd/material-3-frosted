@@ -63,8 +63,11 @@ val colorScheme = when {
 }
 ```
 
-**Migrating from `surfaceVariant`:** MD3 Expressive replaced `surfaceVariant` with the
-`surfaceContainer*` family. `surfaceVariant` is deprecated.
+**`surfaceVariant` vs the `surfaceContainer*` family:** `surfaceVariant` is still a valid M3
+role and is **not** deprecated. Expressive added `surfaceContainerLowest` …
+`surfaceContainerHighest` for containers that should carry the elevation tint explicitly;
+prefer those for cards, menus and sheets, and keep `surfaceVariant` where the design already
+uses it (it is the right pairing for `onSurfaceVariant`).
 
 | Role | Use |
 |------|-----|
@@ -91,8 +94,9 @@ invent sizes.
 | Body | 16/24 | 14/20 | 12/16 |
 | Label | 14/20 | 12/16 | 11/16 |
 
-Title and label styles are Medium weight by default. `titleLarge` is 22sp/28sp SemiBold in the
-current spec.
+Labels are Medium weight; titles are Regular at their base size. The **emphasized** variants
+(for example emphasized `titleLarge`, 22sp/28sp) are SemiBold — use those for the one hero
+moment per screen, not for every title.
 
 ### Shapes
 
@@ -119,11 +123,11 @@ increased tokens stay coherent with the rest:
 val expressiveShapes = Shapes(
     extraSmall = RoundedCornerShape(4.dp),
     small = RoundedCornerShape(8.dp),
-    medium = RoundedCornerShape(16.dp),
-    large = RoundedCornerShape(24.dp),
-    extraLarge = RoundedCornerShape(32.dp),
+    medium = RoundedCornerShape(12.dp),
+    large = RoundedCornerShape(16.dp),
+    extraLarge = RoundedCornerShape(28.dp),
     largeIncreased = RoundedCornerShape(20.dp),
-    extraLargeIncreased = RoundedCornerShape(28.dp),
+    extraLargeIncreased = RoundedCornerShape(32.dp),
     extraExtraLarge = RoundedCornerShape(48.dp),
 )
 ```

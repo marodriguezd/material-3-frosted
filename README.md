@@ -4,7 +4,7 @@
 over Material 3 Expressive — with the placement rules, fallbacks and accessibility that separate
 a real Android 17 look from a glassmorphism demo.
 
-[![skills.sh](https://img.shields.io/badge/skills.sh-material--3--frosted-6E56CF)](https://www.skills.sh/marodriguezd/material-3-frosted)
+[![skills.sh](https://skills.sh/b/marodriguezd/material-3-frosted)](https://www.skills.sh/marodriguezd/material-3-frosted)
 [![validate](https://github.com/marodriguezd/material-3-frosted/actions/workflows/validate.yml/badge.svg)](https://github.com/marodriguezd/material-3-frosted/actions/workflows/validate.yml)
 
 ---
@@ -12,7 +12,14 @@ a real Android 17 look from a glassmorphism demo.
 ## Install
 
 ```bash
+# project scope (committed with the project)
 npx skills add marodriguezd/material-3-frosted --skill material-3-frosted
+
+# user scope, available in every project
+npx skills add marodriguezd/material-3-frosted --skill material-3-frosted -g
+
+# later
+npx skills update -g
 ```
 
 Claude Code, via the plugin marketplace:
@@ -24,10 +31,10 @@ Claude Code, via the plugin marketplace:
 
 **Any other agent, any path.** The skill is one self-contained directory with no install step —
 copy `skills/material-3-frosted/` wherever your assistant looks for skills. The bundled
-installer auto-detects the common homes:
+installer writes the common homes (and creates nothing for an agent whose parent directory is missing):
 
 ```bash
-./install.sh                      # ~/.agents/skills, ~/.claude/skills, ~/.codex/skills…
+./install.sh                      # ~/.agents/skills + the two Antigravity dirs (+ ~/.claude if present)
 ./install.sh --target DIR         # exactly where you want it
 ./install.sh --list               # show candidate targets
 SKILLS_DIR=DIR ./install.sh       # same, scriptable
@@ -38,6 +45,36 @@ Or simply:
 ```bash
 cp -R skills/material-3-frosted ~/.agents/skills/
 ```
+
+Where each agent looks, and what `./install.sh` writes:
+
+| CLI / surface | Skills directory |
+|---|---|
+| FreeBuff | `~/.agents/skills/material-3-frosted` |
+| Codex | `~/.agents/skills/material-3-frosted` (current; the legacy `~/.codex/skills` is not installed by default, because Codex then lists the skill twice) |
+| OpenCode | `~/.agents/skills/material-3-frosted` (agent-compatible; native alternative: `--target ~/.config/opencode/skills`) |
+| Antigravity App + IDE | `~/.gemini/config/skills/material-3-frosted` |
+| Antigravity CLI | `~/.gemini/antigravity-cli/skills/material-3-frosted` |
+| Claude Code | `~/.claude/skills/material-3-frosted`, or the plugin marketplace above |
+
+`npx skills` installs one canonical copy in `~/.agents/skills`; that is the path FreeBuff,
+Codex and OpenCode read. Antigravity does not read it globally — its App/IDE directory is
+`~/.gemini/config/skills` and its CLI directory is `~/.gemini/antigravity-cli/skills` — so
+after an update mirror the canonical copy into both:
+
+```bash
+npx skills update -g && ./install.sh --sync
+```
+
+`./install.sh` without arguments is the full local install (repo → `~/.agents/skills` plus
+the two Antigravity directories, and `~/.claude/skills` when it exists). It deliberately
+does **not** write OpenCode's native directory or Codex's legacy directory: both agents
+already read `~/.agents/skills`, and a second copy with the same name is ambiguous (Codex
+lists it twice). Use `--target` if you want one of those paths anyway. The skill directory
+contains no plugin manifest — `.claude-plugin/plugin.json` lives at the repo root — so a
+copied skill stays a plain skill; a manifest inside it would make Codex namespace it as
+`material-3-frosted:material-3-frosted`. The installer stages the copy before swapping it in
+and refuses a target that resolves to the repo's own skill directory.
 
 Nothing in the skill assumes where it lives: every reference is resolved relative to the folder
 containing `SKILL.md`, and there are no absolute paths anywhere in the tree (a check enforces
@@ -186,11 +223,11 @@ reads correctly as a designed scrim, 23 is fine. Details: `references/platform-m
 ```
 material-3-frosted/
 ├── .claude-plugin/
-│   └── marketplace.json
+│   ├── marketplace.json
+│   └── plugin.json      # plugin root = repo root; skills live under skills/
 ├── .github/workflows/validate.yml
 ├── skills/
 │   └── material-3-frosted/
-│       ├── .claude-plugin/plugin.json
 │       ├── SKILL.md
 │       ├── references/
 │       ├── assets/{examples,templates}/

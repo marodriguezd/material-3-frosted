@@ -34,8 +34,9 @@ public struct GlassTokens: Sendable {
     /// Material used below iOS 26, and whenever the user asked for less
     /// transparency.
     public let material: Material
-    /// Extra tint painted over the material. Never fully clear: with Reduce
-    /// Transparency on, the tint is the whole surface.
+    /// Tint applied to the native glass (iOS 26) and over the material
+    /// fallback. Reduce Transparency uses an opaque system background instead,
+    /// so legibility never depends on this tint.
     public let tint: Color
 
     public init(cornerRadius: CGFloat, material: Material, tint: Color) {

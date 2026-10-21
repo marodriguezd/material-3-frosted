@@ -57,6 +57,7 @@ dependencies {
     implementation(composeBom)
 
     implementation("androidx.compose.material3:material3:1.5.0-beta01")
+    implementation("androidx.compose.material3.adaptive:adaptive:1.3.0")
     implementation("androidx.compose.foundation:foundation")
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.runtime:runtime")
@@ -68,6 +69,7 @@ dependencies {
     implementation("dev.chrisbanes.haze:haze:2.0.1")
     implementation("dev.chrisbanes.haze:haze-blur:2.0.1")
     implementation("dev.chrisbanes.haze:haze-blur-materials:2.0.1")
+    implementation("dev.chrisbanes.haze:haze-blur-material3:2.0.1")
     implementation("dev.chrisbanes.haze:haze-glass:2.0.1")
     implementation("dev.chrisbanes.haze:haze-glass-material3:2.0.1")
 }

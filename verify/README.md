@@ -53,9 +53,9 @@ run, all against the real dependencies:
 
 | Directory | What it does | Proven by |
 |---|---|---|
-| `expressive/`, `stable/` | Compiles the Kotlin examples on material3 1.5.0-beta01 and 1.4.0 | class counts, negative control |
-| `flutter/` | Stages the Dart examples, `flutter analyze --fatal-infos`, runs widget tests | 7 tests, analyzer negative control |
-| `react-native/` | `tsc --noEmit` against expo-blur and expo-glass-effect typings | 4 files, unknown-prop negative control |
+| `expressive/`, `stable/` | Compiles the Kotlin examples on material3 1.5.0-beta01 and 1.4.0 | staged-source + class-count floors, negative control |
+| `flutter/` | Stages the Dart examples, `flutter analyze --fatal-infos`, runs widget tests | 7 tests, staged-source floor, analyzer negative control |
+| `react-native/` | `tsc --noEmit` against expo-blur and expo-glass-effect typings | 5 files, staged-source floor, drift check, unknown-prop negative control |
 | (SwiftUI) | `swiftc -typecheck` on a macOS runner, in CI only | needs Apple's SDK — there is no Swift on Linux |
 
 Every one of them has the same failure mode to watch: a staging path that resolves to nothing

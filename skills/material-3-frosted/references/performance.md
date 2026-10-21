@@ -77,8 +77,9 @@ CompositionLocalProvider(LocalHazePerformanceMode provides HazePerformanceMode.D
 **Downgrade on low-end devices.** A pragmatic tiering:
 
 ```kotlin
+val activityManager = context.getSystemService(ActivityManager::class.java)
 val performanceMode = remember {
-    if (ActivityManager.isLowRamDevice) HazePerformanceMode.Performance
+    if (activityManager.isLowRamDevice) HazePerformanceMode.Performance
     else HazePerformanceMode.Default
 }
 ```

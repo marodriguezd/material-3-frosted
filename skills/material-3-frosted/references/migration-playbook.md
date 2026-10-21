@@ -365,7 +365,6 @@ ExtendedFloatingActionButton(
 | `Unresolved reference: hazeGlassContainer` | Clustering API is on Haze `main`, not in 2.0.1 | Remove it; keep glass groups to 2–3 members |
 | `ModalBottomSheetDefaults.DragHandle` unresolved | The handle lives on `BottomSheetDefaults` in current material3 | `BottomSheetDefaults.DragHandle()` |
 | Glass never appears although the code looks right | `LocalView.current.context` is a `ContextWrapper`, not the `Activity` | Unwrap to the `Activity` before touching `window` |
-| `surfaceVariant` deprecated | MD3 Expressive renamed the role | Use `surfaceContainer*` |
 | Dialogs unreadable over content | Translucent window with no fallback | Raise the background alpha when blur is off |
 | Tab crashes on API 26 | Material3 1.4 requires a higher minSdk for some APIs | Check Material3's minSdk; raise minSdk if justified |
 

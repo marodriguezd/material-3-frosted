@@ -13,11 +13,7 @@
         "name": "marodriguezd"
       },
       "category": "development",
-      "source": {
-        "source": "git-subdir",
-        "url": "https://github.com/marodriguezd/material-3-frosted.git",
-        "path": "skills/material-3-frosted"
-      },
+      "source": "./",
       "tags": [
         "material-design",
         "material3",

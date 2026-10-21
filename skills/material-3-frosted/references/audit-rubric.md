@@ -43,7 +43,8 @@ beautiful and still be unusable.
 - Dark theme exists and is not just the light scheme inverted.
 - Dynamic colour is wired (`dynamicLightColorScheme` / `dynamicDarkColorScheme` on API 31+) with
   a branded fallback for API < 31.
-- `surfaceVariant` is not used (deprecated → `surfaceContainer*`).
+- Containers use `surfaceContainer*` roles; `surfaceVariant` (not deprecated) is only used
+  with `onSurfaceVariant` for lower-emphasis content.
 - `outline` is used for meaningful boundaries, `outlineVariant` for dividers.
 - Error colours are the static error role, not a red derived from the brand hue.
 - Contrast levels: the app does not hard-code alpha over a translucent layer in a way that
@@ -297,8 +298,8 @@ rg -n '\b\d+\.dp\b' --glob '*.kt' | rg -v '(1|2|4|8|12|16|24|32|48|56|64|72|96)\
 rg -n 'com\.google\.android\.material' --glob '*.kt'
 rg -n 'Theme\.MaterialComponents' --glob '*.xml'
 
-# SurfaceVariant (deprecated)
-rg -n 'surfaceVariant' --glob '*.kt'
+# Containers that should use a surfaceContainer* role
+rg -n 'containerColor\s*=\s*MaterialTheme\.colorScheme\.surface' --glob '*.kt'
 
 # Blur used as a backdrop (wrong mechanism)
 rg -n '\.blur\(' --glob '*.kt'

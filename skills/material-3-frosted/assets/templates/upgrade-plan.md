@@ -23,7 +23,7 @@
 | Item | Detail |
 |------|--------|
 | Files | `app/build.gradle.kts`, `ui/theme/Color.kt`, `ui/theme/Theme.kt`, `ui/theme/Type.kt`, `ui/theme/Shape.kt`, `MainActivity.kt` |
-| Changes | Compose BOM → `2026.09.00` **plus an explicit `material3:1.5.0-beta01` override** (the BOM's 1.4.0 keeps the Expressive APIs `internal`); `compileSdk`/`targetSdk` → 37; `MaterialExpressiveTheme` + `MotionScheme.expressive()`; dynamic colour on API 31+ with branded fallback; `surfaceContainer*` roles replace `surfaceVariant`; `enableEdgeToEdge()` + insets |
+| Changes | Compose BOM → `2026.09.00` **plus an explicit `material3:1.5.0-beta01` override** (the BOM's 1.4.0 keeps the Expressive APIs `internal`); `compileSdk`/`targetSdk` → 37; `MaterialExpressiveTheme` + `MotionScheme.expressive()`; dynamic colour on API 31+ with branded fallback; `surfaceContainer*` roles for containers; `enableEdgeToEdge()` + insets |
 | Risk | Low — compile-time changes plus one theme swap |
 | Acceptance | `./gradlew :app:dependencies` shows material3 1.5.0-beta01; app builds and runs; light/dark correct; dynamic colour on/off correct; edge-to-edge with no content under the status bar |
 | Effort | S |

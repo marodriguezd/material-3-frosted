@@ -67,6 +67,7 @@ dependencies {
     implementation("dev.chrisbanes.haze:haze:2.0.1")
     implementation("dev.chrisbanes.haze:haze-blur:2.0.1")
     implementation("dev.chrisbanes.haze:haze-blur-materials:2.0.1")
+    implementation("dev.chrisbanes.haze:haze-blur-material3:2.0.1")
     implementation("dev.chrisbanes.haze:haze-glass:2.0.1")
     implementation("dev.chrisbanes.haze:haze-glass-material3:2.0.1")
 }

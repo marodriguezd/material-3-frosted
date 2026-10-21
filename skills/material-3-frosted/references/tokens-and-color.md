@@ -48,10 +48,12 @@ twice, it is a token.
 | `outlineVariant` | Dividers, decorative separators |
 | `scrim` | Modal scrims |
 
-### The `surfaceVariant` trap
+### `surfaceVariant` vs `surfaceContainer*`
 
-`surfaceVariant` is **deprecated** in Material3 Expressive. It became `surfaceContainerHigh`.
-Leaving it in place means a screen that looks right in one theme and wrong in another.
+`surfaceVariant` is **not deprecated**: it is still the correct pair for `onSurfaceVariant`
+(lower-emphasis content, dividers in some designs). What changed is that containers which need
+the elevation tint — cards, menus, sheets, nav bars — should use the `surfaceContainer*`
+family, because those roles are the ones tuned for tonal elevation and dynamic colour.
 
 ### Tonal pairing
 
@@ -61,7 +63,7 @@ Only combine a role with its `on` counterpart:
 primary        + onPrimary             ✓
 primaryContainer + onPrimaryContainer  ✓
 surface        + onSurface             ✓
-surfaceVariant + onSurfaceVariant      ✗  (and surfaceVariant is deprecated)
+surfaceVariant + onSurfaceVariant      ✓  (content on the variant surface)
 primary        + onSurface             ✗
 ```
 

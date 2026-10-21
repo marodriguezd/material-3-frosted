@@ -33,12 +33,15 @@ expect_not_contains() {
 echo "── repo layout ─────────────────────────────────────────────"
 expect_file ".claude-plugin/marketplace.json"
 expect_contains ".claude-plugin/marketplace.json" '"name": "material-3-frosted"'
-expect_contains ".claude-plugin/marketplace.json" "\"path\": \"$SKILL\""
-expect_absent ".claude-plugin/plugin.json"
+expect_contains ".claude-plugin/marketplace.json" '"source": "./"'
 
-expect_file "$SKILL/.claude-plugin/plugin.json"
-expect_contains "$SKILL/.claude-plugin/plugin.json" '"name": "material-3-frosted"'
-expect_contains "$SKILL/.claude-plugin/plugin.json" '"version"'
+# The plugin root is the repository root: manifest in .claude-plugin/, skills in skills/.
+# Keeping the manifest out of the skill directory is what lets `npx skills` copy a pure
+# skill (a plugin.json inside it makes Codex namespace the skill as name:name).
+expect_file ".claude-plugin/plugin.json"
+expect_contains ".claude-plugin/plugin.json" '"name": "material-3-frosted"'
+expect_contains ".claude-plugin/plugin.json" '"version"'
+expect_absent "$SKILL/.claude-plugin/plugin.json"
 
 # The skill content must live under skills/<name>/, never at the repo root.
 expect_absent "SKILL.md"
@@ -64,6 +67,10 @@ head -1 "$SKILL/SKILL.md" | grep -q '^---$' && pass "frontmatter opens" || fail 
 grep -qx -- '---' <(sed -n '2,40p' "$SKILL/SKILL.md") && pass "frontmatter closes" || fail "frontmatter never closes"
 expect_contains "$SKILL/SKILL.md" "name: material-3-frosted"
 expect_contains "$SKILL/SKILL.md" "description:"
+expect_contains "$SKILL/SKILL.md" "license: MIT"
+expect_contains "$SKILL/SKILL.md" "user-invocable: true"
+expect_not_contains "$SKILL/SKILL.md" "user-invokable"
+expect_contains "$SKILL/SKILL.md" "metadata:"
 
 echo "── portability: no absolute paths ──────────────────────────"
 # Any absolute path to a home dir or this machine's layout is a portability bug.
@@ -116,6 +123,29 @@ while IFS= read -r ref; do
   fi
 done < <(grep -rhoE '`((references|assets|scripts)/[^`]+)`' "$SKILL/SKILL.md" | tr -d '`' | sort -u)
 [[ "$missing" -eq 0 ]] && pass "no broken references in SKILL.md"
+
+echo "── installer safety ────────────────────────────────────────"
+tmp="$(mktemp -d)"
+mkdir -p "$tmp/skills" "$tmp/out"
+cp install.sh "$tmp/"
+cp -r "$SKILL" "$tmp/skills/"
+# `--target skills` resolves to the source itself. It must be refused and the source
+# must survive; the old installer deleted it before failing on the copy.
+if ( cd "$tmp" && ./install.sh --target skills >/dev/null 2>&1 ); then
+  fail "installer accepted an in-place target"
+else
+  pass "installer refuses an in-place target"
+fi
+[[ -f "$tmp/skills/material-3-frosted/SKILL.md" ]] \
+  && pass "source survived the rejected install" \
+  || fail "source was damaged by the rejected install"
+if ( cd "$tmp" && ./install.sh --target out >/dev/null 2>&1 ) \
+   && [[ -f "$tmp/out/material-3-frosted/SKILL.md" ]]; then
+  pass "installer copies into a normal target"
+else
+  fail "installer did not install into a normal target"
+fi
+rm -rf "$tmp"
 
 echo
 if [[ "$failures" -gt 0 ]]; then
