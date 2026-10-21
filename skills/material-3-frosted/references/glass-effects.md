@@ -386,8 +386,9 @@ apps.
 5. **Use `HazePerformanceMode.Default`** (the fixed *Balanced* profile) unless you have
    measured. `Quality` is for hero surfaces; `Performance` for cheap chrome.
 6. **Measure** on a mid-range device with a release build. A debug build tells you nothing.
-7. **Glass containers merge nearby surfaces into one cluster** — one draw instead of N. Use
-   `Modifier.hazeGlassContainer(spacing = …)` for grouped controls.
+7. **Each glass surface is its own layer.** Haze 2.0.1 has no clustering API — `hazeGlassContainer`
+   is on Haze's `main` branch, not in the released artifact, so it will not compile. The lever
+   you have is the count: keep a group of glass controls to 2–3 members.
 
 ### Performance modes
 

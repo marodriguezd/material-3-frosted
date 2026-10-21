@@ -29,7 +29,6 @@ import dev.chrisbanes.haze.blur.materials.HazeMaterials
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.glass.GlassStyle
 import dev.chrisbanes.haze.glass.hazeGlass
-import dev.chrisbanes.haze.glass.hazeGlassContainer
 import com.example.app.ui.theme.LocalGlassAvailable
 
 /**
@@ -40,7 +39,7 @@ import com.example.app.ui.theme.LocalGlassAvailable
  *    `containerColor` to an opaque colour would hide the blur.
  *  - When glass is unavailable, the bar falls back to `surfaceContainer` — fully legible.
  *  - The FAB keeps its own M3 colour semantics; the glass is the surrounding chrome.
- *  - Nearby glass surfaces are merged with `hazeGlassContainer` so they read as one object.
+ *  - Each glass surface is its own render layer in Haze 2.0.1, so keep the count low.
  */
 
 /** Glass top app bar. */
@@ -161,10 +160,12 @@ fun GlassFabDock(
 }
 
 /**
- * A merged group of glass controls (a segmented control / button group).
+ * A group of glass controls (a segmented control / button group).
  *
- * `hazeGlassContainer(spacing = …)` merges the members into a single glass cluster: one render
- * layer, and visually one object instead of a pile of separate panes.
+ * Each member is its own glass surface in Haze 2.0.1; `hazeGlassContainer`, which merges the
+ * members into one render layer and one optical object, is NOT in 2.0.1 — it exists on Haze's
+ * `main` branch only. Until it ships, keep the number of members small (2–3) and accept one
+ * layer each.
  */
 @Composable
 fun GlassControlGroup(
@@ -173,8 +174,7 @@ fun GlassControlGroup(
     content: @Composable RowScope.() -> Unit,
 ) {
     Row(
-        modifier = modifier
-            .hazeGlassContainer(spacing = 8.dp),
+        modifier = modifier,
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {

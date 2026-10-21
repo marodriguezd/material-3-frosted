@@ -59,8 +59,51 @@ jobs:
           python3 skills/material-3-frosted/scripts/scan_ui.py . --format json \
             | python3 -c "import json,sys; json.load(sys.stdin); print('json ok')"
 
+  compile:
+    name: examples compile (real)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+      - uses: android-actions/setup-android@v3
+
+      # AGP downloads whichever SDK platform it needs, but only once the licences are
+      # accepted on the runner.
+      - name: Accept Android SDK licences
+        run: yes | sdkmanager --licenses > /dev/null 2>&1 || true
+
+      # The real check: every shipped example, against the real artifacts, on both the
+      # expressive (material3 1.5.0-beta01) and stable (1.4.0) paths. This is what catches
+      # API errors that parsing cannot — e.g. a Haze function that only exists on `main`.
+      - name: Compile examples
+        working-directory: verify
+        run: |
+          set -o pipefail
+          ./gradlew --no-daemon :expressive:compileDebugKotlin :stable:compileDebugKotlin
+
+      # A previous iteration of this harness passed while compiling zero files, because a
+      # source path pointed at a directory that did not exist. Exit status alone is not
+      # evidence; count the produced classes.
+      - name: Prove the harness compiled something
+        run: |
+          set -e
+          for m in expressive stable; do
+            n=$(find "verify/$m/build" -name '*.class' \
+                  -not -name 'R.class' -not -name 'R$*.class' -not -name 'BuildConfig.class' | wc -l)
+            echo "$m: $n classes"
+            if [ "$n" -lt 20 ]; then
+              echo "FAIL: $m produced $n classes — the harness compiled nothing"
+              exit 1
+            fi
+          done
+
+  # Fast pre-check with no Android SDK. `compile` below is the authoritative one; this job
+  # exists so a syntax error fails in ~30 s instead of after the Gradle download.
   kotlin:
-    name: kotlin examples parse
+    name: kotlin syntax pre-check
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

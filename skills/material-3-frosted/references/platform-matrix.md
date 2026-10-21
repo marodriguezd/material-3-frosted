@@ -111,10 +111,11 @@ releases.
 | `FLAG_BLUR_BEHIND` / `blurBehindRadius` | ✅ | ✅ | 31 | Cross-window |
 | `WindowManager.isCrossWindowBlurEnabled()` | ✅ | ✅ | 31 | Read at runtime; flips with settings |
 | `addCrossWindowBlurEnabledListener` | ✅ | ✅ | 31 | |
-| `RenderNode` backdrop capture (Haze native path) | ✅ | ❌ | 31 (Haze 2 requires API 31+ on Android) | Haze 2 requires **API 31+** for the blur/glass runtime |
+| Haze 2 blur (`Modifier.hazeBlur`) | ✅ | ❌ | **23** (declared) | Compiles on the Haze floor; below 31 it draws a tinted scrim, not a blur — see §4 |
+| Haze 2 RenderEffect blur | ✅ | ❌ | 31 | Real blur; `HazeBlurDefaults` enables blur only on 31+ |
 | Android native window backdrop (Haze `isPlatformBackdropEnabled`) | ✅ | ❌ | 37.2 | Experimental; Android 17.2+ only |
-| AGSL / `RuntimeShader` (Glass) | ✅ | ❌ | 33 | Glass refraction needs API 33+; Haze degrades below that |
-| `Modifier.hazeGlass` | ✅ | ❌ | 33 | Glass requires AGSL (API 33+) |
+| AGSL / `RuntimeShader` (Glass refraction) | ✅ | ❌ | 33 | Progressive blur and glass refraction take the shader path on 33+; below that Haze uses its non-refractive fallback |
+| `Modifier.hazeGlass` | ✅ | ❌ | **23** (declared) | Compiles everywhere; refraction quality needs 33+ |
 | Predictive back | ✅ | ✅ | 33 | `PredictiveBackHandler` |
 | `LocaleList` / per-app language | ✅ | ✅ | 33 | |
 | `enableEdgeToEdge` predictive insets | ✅ | ✅ | 35 | `WindowInsets` animation APIs |
@@ -142,23 +143,36 @@ Do not pretend a Views app can be brought to full Expressive parity in the same 
 
 ## 4. Haze platform requirements
 
+These are the numbers Haze 2.0.1 actually declares and implements, read from its published
+sources — not from release-note prose. The skill's own `verify/` Gradle module compiles every
+example against `minSdk = 23` and all five Haze artifacts, which is the check that keeps these
+rows honest.
+
 | Requirement | Detail |
 |--------------|--------|
-| **minSdk 31** | Haze 2 requires API 31+ on Android. Below that, the blur/glass runtime is unavailable. |
-| **AGSL shaders** | `haze-glass` needs API 33+ (`RuntimeShader`). Below that, use `haze-blur` (RenderEffect-based). |
+| **minSdk 23 (declared)** | Haze 2.0.1's `Versions.MIN_SDK` is 23. Nothing fails to compile below 31. |
+| **Real blur needs API 31** | `HazeBlurDefaults` sets `blurEnabled = SDK_INT >= 31`. Below 31 the blur delegate is `ScrimBlurVisualEffectDelegate`: Haze draws the `fallbackTint` scrim. **Not a blur, but not nothing** — the surface still separates from content. |
+| **Legacy blur below 31** | Setting `blurEnabled = true` on API 23–30 routes to Haze's RenderScript delegate. It works and it is slow; treat it as opt-in, not the default. |
+| **Smartphone-class sharpness needs API 33** | The `RuntimeShader` path for progressive blur is gated on `SDK_INT >= 33`; glass refraction uses `RuntimeShader` render effects and falls back to a static highlight/rim delegate when the device cannot render them. |
 | **Native backdrop (opt-in)** | Android 37.2+ only, experimental, off by default. |
 | **Other platforms** | Haze supports iOS/desktop/web too, but this skill is Android-only. |
 
-If the app's `minSdk` is below 31, you have three options:
+So the product question is **not** "what is Haze's minSdk". It is:
 
-1. Raise `minSdk` to 31 (a real product decision — get sign-off).
-2. Ship Blur-only, and skip Glass (RenderEffect blur also needs API 31 — so this does not
-   help below 31).
-3. Ship no glass, or a pre-rendered/static "frosted" texture approximation for very old
-   devices.
+> On which API level do you accept a scrim instead of a blur?
 
-Reality: below API 31 there is no real system blur. Do not fake it with a semi-transparent
-white rectangle and call it glass.
+That is a real product decision; get it signed off. The options, in order of quality:
+
+1. **`minSdk` 33+** — glass and blur are both real on every device you ship to. Cleanest story.
+2. **`minSdk` 31–32** — real blur everywhere, refraction missing on 31/32. Glass surfaces fall
+   back to highlights. Fine if the design does not depend on refraction.
+3. **`minSdk` below 31** — Haze compiles and runs, but the default is a tinted scrim. Make the
+   fallback deliberate: tune `fallbackTint` to the `surfaceContainer` role so a scrimmed bar
+   still looks designed, and never let the design *depend* on the blur being there.
+
+The one thing not to do: ship a translucent bar whose legibility rests on a blur that a slice
+of your users do not get. If the bar is unreadable as a flat scrim, it is unreadable on every
+API 23–30 device.
 
 ---
 
@@ -169,7 +183,7 @@ white rectangle and call it glass.
 | 37.2+ | Haze Glass (optionally with the experimental native backdrop, measured) |
 | 33–36 | Haze Glass; Haze Blur for large surfaces |
 | 31–32 | Haze Blur only (no AGSL → no refraction); platform window blur for dialogs |
-| < 31 | No blur. Opaque M3 surfaces with tonal elevation. |
+| 23–30 | Haze blur draws its `fallbackTint` scrim by default. Either accept the designed scrim or opt into the slow RenderScript path. |
 
 ---
 

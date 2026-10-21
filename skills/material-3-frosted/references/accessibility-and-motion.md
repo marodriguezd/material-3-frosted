@@ -139,9 +139,9 @@ Checklist:
 | Progress | Announce the value; a spinning loader with no label is useless |
 | Dialogs | Compose `Dialog` handles focus trapping; custom overlays must do it manually |
 
-A glass surface must not break the accessibility tree. `hazeBlur` / `hazeGlassContainer`
-must not swallow semantics. If a blurred surface holds a `Surface` with a `containerColor`,
-the semantics come from the surface, not from the blur modifier.
+A glass surface must not break the accessibility tree. `hazeBlur` / `hazeGlass` must not swallow
+semantics. If a blurred surface holds a `Surface` with a `containerColor`, the semantics come
+from the surface, not from the blur modifier — the effect modifiers only change pixels.
 
 **Test**: TalkBack must be able to reach and activate every control, and each control must
 read sensibly with the screen reader's blur/transparency handling on.

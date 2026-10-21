@@ -5,11 +5,14 @@ import android.content.Context
 import android.os.Build
 import android.view.WindowManager
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.MaterialExpressiveTheme
 import androidx.compose.material3.MotionScheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.dynamicDarkColorScheme
+import androidx.compose.material3.Shapes
+import androidx.compose.material3.Typography
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
@@ -20,7 +23,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import dev.chrisbanes.haze.HazePerformanceMode
 import dev.chrisbanes.haze.LocalHazePerformanceMode
 import dev.chrisbanes.haze.blur.HazeBlurStyle
@@ -158,6 +163,42 @@ fun rememberAppGlassStyle(): GlassStyle {
 }
 
 // ---------------------------------------------------------------------------
+// Type & shape
+// ---------------------------------------------------------------------------
+
+/**
+ * The expressive shape scale.
+ *
+ * `largeIncreased` / `extraLargeIncreased` / `extraExtraLarge` are public from material3
+ * 1.5.0-beta01. On 1.4.0 they are `internal` — see
+ * `assets/examples/stable/FrostedThemeStable.kt` for that path.
+ */
+val FrostedShapes = Shapes(
+    extraSmall = RoundedCornerShape(4.dp),
+    small = RoundedCornerShape(8.dp),
+    medium = RoundedCornerShape(12.dp),
+    large = RoundedCornerShape(16.dp),
+    extraLarge = RoundedCornerShape(28.dp),
+    largeIncreased = RoundedCornerShape(20.dp),
+    extraLargeIncreased = RoundedCornerShape(32.dp),
+    extraExtraLarge = RoundedCornerShape(48.dp),
+)
+
+/**
+ * Expressive typography. The single most effective change is an emphasized `titleLarge`;
+ * everything else stays on the stock scale so the app does not drift.
+ */
+val FrostedTypography: Typography = Typography().let { base ->
+    base.copy(
+        titleLarge = base.titleLarge.copy(
+            fontSize = 22.sp,
+            lineHeight = 28.sp,
+            fontWeight = FontWeight.SemiBold,
+        ),
+    )
+}
+
+// ---------------------------------------------------------------------------
 // Theme
 // ---------------------------------------------------------------------------
 
@@ -205,8 +246,8 @@ fun FrostedTheme(
         MaterialExpressiveTheme(
             colorScheme = colorScheme,
             motionScheme = MotionScheme.expressive(),
-            typography = AppTypography,
-            shapes = AppShapes,
+            typography = FrostedTypography,
+            shapes = FrostedShapes,
             content = content,
         )
     }

@@ -10,7 +10,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.ModalBottomSheetDefaults
+import androidx.compose.material3.BottomSheetDefaults
 import androidx.compose.material3.SheetState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -46,7 +46,7 @@ fun GlassBottomSheet(
         sheetState = sheetState,
         containerColor = scheme.surfaceContainerLow,
         // The drag handle and the header live above the opaque body.
-        dragHandle = { ModalBottomSheetDefaults.DragHandle() },
+        dragHandle = { BottomSheetDefaults.DragHandle() },
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
             // Frosted header: the page behind the sheet shows through the strip above the body.

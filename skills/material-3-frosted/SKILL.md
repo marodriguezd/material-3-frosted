@@ -192,9 +192,14 @@ Work in reviewable increments, each one shippable. Reference implementations liv
 |------|---------------|
 | `assets/examples/FrostedTheme.kt` | `MaterialExpressiveTheme` + shared Glass/Blur styles + accessibility wiring |
 | `assets/examples/FrostedScaffold.kt` | Edge-to-edge scaffold with a glass top bar and glass bottom bar over scrolling content |
-| `assets/examples/GlassChrome.kt` | Glass app bar, navigation bar, FAB, and a merged glass control group |
+| `assets/examples/GlassChrome.kt` | Glass app bar, navigation bar, FAB, and a small glass control group |
 | `assets/examples/GlassSheet.kt` | Modal bottom sheet with a glass header, scrim, and an opaque fallback |
 | `assets/examples/WindowBlur.kt` | Platform window blur (background blur + blur behind) with the enabled/disabled listener |
+| `assets/examples/stable/FrostedThemeStable.kt` | The same theme on material3 **1.4.0**, without the APIs that are `internal` there |
+
+Every file in `assets/examples/` compiles against the real artifacts — the repo's `verify/`
+Gradle project builds them against both material3 1.5.0-beta01 and 1.4.0 on every push. They
+are still examples, not a module: your package name, your colour roles, your strings.
 
 Do **not** paste a whole app from these files. Adapt the pattern to the target's own design
 system. If the app has a `ui/theme` package, the upgrade belongs there, not in a parallel
@@ -239,7 +244,7 @@ opaque.
 | Bottom navigation bar | The other big chrome plane | Use `containerColor = Color.Transparent` + glass on the modifier |
 | Navigation rail / drawer (medium+) | Same | |
 | FAB and FAB menu | Floats over content; glass reads as "floating" | Keep the FAB's own M3 colour semantics; the glass is the container |
-| Segmented control / button group | Apple: "glass *button* style", not a generic backdrop under a normal button | Prefer a merged glass group (`hazeGlassContainer`) |
+| Segmented control / button group | Apple: "glass *button* style", not a generic backdrop under a normal button | 2–3 members maximum: each is its own render layer |
 | Modal bottom sheet header & scrim | Depth between the sheet and the page | The sheet body itself stays opaque |
 | Date/time picker header | | |
 | Search bar (expanded state) | | |
@@ -270,8 +275,10 @@ opaque.
   FAB *and* glass cards is noise.
 - **Text on glass gets a tint, not a hope.** Use `containerColor = surfaceContainerLow` (or
   `surfaceContainer`) with a tint, and verify contrast in both themes.
-- **Merge, don't stack.** `Modifier.hazeGlassContainer(spacing = …)` makes nearby glass surfaces
-  read as one object (a toolbar, a segmented control) instead of a pile of separate panes.
+- **Merge, don't stack — but count layers.** Each `hazeGlass` surface is its own render layer
+  in Haze 2.0.1, so a group of glass controls multiplies the cost. Keep a group to 2–3 members.
+  A clustering API (`hazeGlassContainer`) exists on Haze's `main` branch but is **not in 2.0.1**
+  — do not write it against the released artifact.
 - **Blur radius is not a brand value.** Start with `HazeMaterials.thin()` / `GlassStyle.regular`
   and only tune after measuring. Large radii on large surfaces are the #1 cause of jank.
 - **Never blur the content the user is reading to do the task.** If in doubt, it is Tier 3.
@@ -331,12 +338,25 @@ dependencies {
 ```
 
 ```kotlin
-// compileSdk 37 (Android 17), targetSdk 37, minSdk: raise only if you can justify it
 android {
     compileSdk = 37
-    defaultConfig { targetSdk = 37 }
+    defaultConfig {
+        targetSdk = 37
+        // Haze 2.0.1 declares minSdk 23 and compiles anywhere. What changes by level is the
+        // effect: real blur on 31+, refraction on 33+, a tinted scrim on 23–30. Set this to
+        // the level at which your design still reads correctly, and get it signed off.
+        minSdk = 23
+    }
 }
 ```
+
+| `minSdk` | What glass actually does |
+|----------|--------------------------|
+| 33+ | Blur + refraction on every device |
+| 31–32 | Blur everywhere; glass uses its static highlight/rim fallback |
+| below 31 | Tinted scrim (`fallbackTint`), not a blur |
+
+Do not design a bar whose legibility depends on a blur you then ship to API 24 devices.
 
 ### Version reality — read this before pinning
 
@@ -432,7 +452,8 @@ Load on demand — the tiers are ordered by how often you'll need them.
 **Assets**
 | Path | Contents |
 |------|----------|
-| `assets/examples/*.kt` | Copy-adapt reference implementations |
+| `assets/examples/*.kt` | Copy-adapt reference implementations (all compiled in `verify/`) |
+| `assets/examples/stable/` | The material3 1.4.0 theme for apps staying on stable |
 | `assets/templates/audit-report.md` | Report skeleton |
 | `assets/templates/upgrade-plan.md` | Plan skeleton |
 | `scripts/scan_ui.py` | Static UI scanner (Phase 0) |

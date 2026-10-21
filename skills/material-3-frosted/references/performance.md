@@ -147,16 +147,23 @@ Report the numbers in the upgrade report, with the device named.
 
 ## 5. Composition-level optimisations
 
-### Merge nearby surfaces
+### Count the glass surfaces
+
+Haze 2.0.1 renders each glass surface as its own layer; there is no released API that
+clusters nearby surfaces into one draw. `hazeGlassContainer` exists on Haze's `main` branch
+only — writing it against 2.0.1 is a compile error, not an optimisation.
 
 ```kotlin
-Row(modifier = Modifier.hazeGlassContainer(spacing = 8.dp)) {
-    GlassChip(…)   // each is a hazeGlass member
+// Three chips = three glass layers. On a mid-range device that is already the budget.
+Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+    GlassChip(…)
+    GlassChip(…)
     GlassChip(…)
 }
 ```
 
-One render layer instead of N, and they visually read as one object.
+The only lever you have today is the count: keep glass groups to 2–3 members, and prefer one
+wider glass surface over several small ones when the design allows it.
 
 ### Source only what you need
 

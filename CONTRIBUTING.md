@@ -27,15 +27,26 @@ git clone --depth 1 https://github.com/chrisbanes/haze && grep -rn "public fun M
 If you cannot verify a claim, do not state it. Write what you observed, and say what you could
 not check.
 
-## 2. Examples must parse
+## 2. Examples must compile
 
-The Kotlin in `assets/examples/` is copy-adapt code; a syntax error wastes the reader's time.
+The Kotlin in `assets/examples/` is copy-adapt code. Parsing is not enough: a wrong signature
+or a function that only exists on Haze's `main` branch parses fine and fails on the reader's
+first build. `verify/` compiles every example against the real artifacts.
 
 ```bash
-kotlinc assets/examples/FrostedTheme.kt -d /tmp/out
-# Unresolved references are expected (no Android SDK / Compose on a bare JDK).
-# Any error that is NOT an unresolved-reference consequence is a bug.
+cd verify
+./gradlew :expressive:compileDebugKotlin    # material3 1.5.0-beta01 + Haze 2.0.1
+./gradlew :stable:compileDebugKotlin        # material3 1.4.0
 ```
+
+It needs a JDK 17+ and the Android SDK (AGP downloads the platform it needs once the licences
+are accepted). If you change an example, change it in
+`skills/material-3-frosted/assets/examples/` — the modules stage those files into `build/`, so
+there is exactly one copy of every example and no way for the harness to drift from what ships.
+
+That staging is also the harness's known failure mode: point it at a directory that does not
+exist and the build succeeds while compiling nothing. If you touch the build files, check that
+the class counts are still ~25 per module, not zero.
 
 ## Before opening a PR
 
@@ -43,9 +54,10 @@ kotlinc assets/examples/FrostedTheme.kt -d /tmp/out
 ./tests/plugin_layout_test.sh          # repo layout + manifests
 python3 -m py_compile skills/material-3-frosted/scripts/scan_ui.py
 python3 skills/material-3-frosted/scripts/scan_ui.py . --format text   # scanner still runs
+cd verify && ./gradlew :expressive:compileDebugKotlin :stable:compileDebugKotlin
 ```
 
-All three must pass. The layout test also enforces that `SKILL.md`, `references/` and `assets/`
+All four must pass. The layout test also enforces that `SKILL.md`, `references/` and `assets/`
 live under `skills/material-3-frosted/` and never at the repo root.
 
 ## Style

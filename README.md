@@ -84,9 +84,11 @@ This skill encodes the correct version:
 | `references/accessibility-and-motion.md` | Reduce-blur, reduced motion, TalkBack, touch targets, spring choices |
 | `references/performance.md` | Blur cost model, budgets, `HazePerformanceMode`, measuring |
 | `references/platform-matrix.md` | Feature × platform × version, verified against published artifacts |
-| `assets/examples/*.kt` | 5 copy-adapt Compose implementations |
+| `assets/examples/*.kt` | 5 copy-adapt Compose implementations (compiled — see below) |
+| `assets/examples/stable/` | The material3 1.4.0 theme, for teams that stay on stable |
 | `assets/templates/*.md` | Audit report and upgrade plan skeletons |
 | `scripts/scan_ui.py` | Static UI scanner for existing apps (Phase 0) |
+| `verify/` | A Gradle harness that actually compiles the examples against the real artifacts |
 
 ## Quick start
 
@@ -112,6 +114,32 @@ than written from memory. Two findings worth knowing before you start:
 
 Haze artifacts are released in lockstep — pin them all to the same version (`2.0.1`).
 
+### The examples are compiled, not just proofread
+
+The skill ships `verify/`, a two-module Gradle project that compiles every example against the
+real dependencies:
+
+```bash
+cd verify
+./gradlew :expressive:compileDebugKotlin   # material3 1.5.0-beta01 + Haze 2.0.1, minSdk 23
+./gradlew :stable:compileDebugKotlin       # material3 1.4.0, the stable path
+```
+
+Writing it paid for itself immediately — the first real build caught four defects that
+proofreading had missed:
+
+| Defect | Why it mattered |
+|--------|-----------------|
+| `hazeGlassContainer` does not exist in Haze 2.0.1 | It is on Haze's `main` branch only. Every tutorial that mentions it would have produced a compile error. |
+| `ModalBottomSheetDefaults.DragHandle` | The handle lives on `BottomSheetDefaults` in current material3. |
+| Examples referenced `AppTypography` / `AppShapes` but never defined them | Copy-paste would not compile. They now ship as `FrostedTypography` / `FrostedShapes`. |
+| `as? Activity` on `LocalView.current.context` | That context is usually a `ContextWrapper`, so the cast silently returned `null` and window blur never applied. Now unwrapped through the chain. |
+
+**Stated limit:** the harness compiles the examples (`compileDebugKotlin`). It does not
+`assembleDebug`, run on a device, or verify pixels. Compiling proves the APIs and signatures are
+right; it cannot prove the result looks good — that is design judgment, and the skill's audit
+rubric is where that is exercised.
+
 ## Platform support
 
 | | Support |
@@ -121,7 +149,20 @@ Haze artifacts are released in lockstep — pin them all to the same version (`2
 | Flutter | `BackdropFilter` blur only — no refraction/Glass equivalent |
 | Web | Not covered; Material Web is in maintenance mode and does not implement Expressive |
 
-Haze 2 requires **API 31+**; Glass refraction requires **API 33+** (AGSL).
+### API levels — the real numbers
+
+Haze 2.0.1 declares **`minSdk` 23**; it compiles and runs well below 31. What changes is the
+quality of the effect:
+
+| API | What you get |
+|---|---|
+| 33+ | Real blur **and** glass refraction (`RuntimeShader` path) |
+| 31–32 | Real blur (RenderEffect); glass draws its static highlight/rim fallback |
+| 23–30 | Haze's blur delegate falls back to a **tinted scrim** (`fallbackTint`), not a blur |
+
+The decision is therefore not "what is Haze's minSdk" but "on which API do you accept a scrim
+instead of a blur". If your design only reads correctly with a blur, set `minSdk` to 33. If it
+reads correctly as a designed scrim, 23 is fine. Details: `references/platform-matrix.md`.
 
 ## Structure
 
@@ -137,6 +178,11 @@ material-3-frosted/
 │       ├── references/
 │       ├── assets/{examples,templates}/
 │       └── scripts/scan_ui.py
+├── verify/
+│   ├── settings.gradle.kts
+│   ├── gradlew
+│   ├── expressive/    # material3 1.5.0-beta01 + Haze 2.0.1
+│   └── stable/        # material3 1.4.0
 ├── tests/plugin_layout_test.sh
 ├── install.sh
 ├── CONTRIBUTING.md
@@ -144,9 +190,14 @@ material-3-frosted/
 └── README.md
 ```
 
+`verify/` is a development-only harness: it is **not** copied by `npx skills add` (that command
+installs only `skills/material-3-frosted/`), so it adds nothing to the skill's size for users.
+
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md). Run `./tests/plugin_layout_test.sh` before opening a PR.
+See [CONTRIBUTING.md](CONTRIBUTING.md). Run `./tests/plugin_layout_test.sh` before opening a PR,
+and `cd verify && ./gradlew :expressive:compileDebugKotlin :stable:compileDebugKotlin` after
+touching anything in `assets/examples/` — the examples are shipped code, not illustrations.
 
 ## License
 

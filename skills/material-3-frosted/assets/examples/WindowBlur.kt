@@ -1,5 +1,8 @@
 package com.example.app.ui
 
+import android.app.Activity
+import android.content.Context
+import android.content.ContextWrapper
 import android.os.Build
 import android.view.WindowManager
 import androidx.compose.runtime.Composable
@@ -33,6 +36,19 @@ import java.util.function.Consumer
  *       <item name="android:windowBlurBehindRadius">20</item>
  *   </style>
  */
+/**
+ * Walks the ContextWrapper chain to the hosting Activity.
+ *
+ * `LocalView.current.context` is frequently a ContextThemeWrapper, not the Activity, so a
+ * plain `as? Activity` cast silently does nothing — the blur never gets applied and the
+ * screen just looks wrong. Always unwrap.
+ */
+tailrec fun Context.findActivity(): Activity? = when (this) {
+    is Activity -> this
+    is ContextWrapper -> baseContext.findActivity()
+    else -> null
+}
+
 object WindowBlurDefaults {
     const val BACKGROUND_BLUR_RADIUS_PX = 80
     const val BLUR_BEHIND_RADIUS_PX = 20
@@ -60,7 +76,7 @@ fun WindowBlurEffect(
     val context = LocalContext.current
 
     DisposableEffect(view, backgroundRadiusPx, blurBehindRadiusPx, opaqueDimAmount) {
-        val window = (view.context as? android.app.Activity)?.window
+        val window = context.findActivity()?.window
         if (window == null) {
             onDispose { }
         } else {
@@ -141,8 +157,10 @@ fun EdgeToEdgeSetup() {
     val view = LocalView.current
     if (view.isInEditMode) return
 
-    DisposableEffect(view) {
-        val window = (view.context as? android.app.Activity)?.window
+    val context = LocalContext.current
+
+    DisposableEffect(view, context) {
+        val window = context.findActivity()?.window
         if (window != null) {
             WindowCompat.setDecorFitsSystemWindows(window, false)
         }
