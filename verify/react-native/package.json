@@ -1,0 +1,19 @@
+{
+  "name": "material-3-frosted-verify-rn",
+  "private": true,
+  "version": "0.0.1",
+  "description": "Typechecks the skill's React Native examples against the real packages.",
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "expo-blur": "58.0.5",
+    "expo-glass-effect": "58.0.4",
+    "react": "19.2.0",
+    "react-native": "0.83.0"
+  },
+  "devDependencies": {
+    "@types/react": "19.2.2",
+    "typescript": "5.9.3"
+  }
+}

@@ -108,6 +108,97 @@ jobs:
             fi
           done
 
+  react-native:
+    name: react-native examples (typecheck)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: verify/react-native
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      # The examples are typechecked against the real expo-blur and
+      # expo-glass-effect typings, not against hand-written stubs.
+      - name: Install
+        run: npm install --no-audit --no-fund
+
+      - name: Typecheck
+        run: npx tsc --noEmit
+
+      - name: Prove the harness typechecked something
+        run: |
+          set -e
+          n=$(find examples -name '*.tsx' -o -name '*.ts' | wc -l)
+          echo "example files: $n"
+          if [ "$n" -lt 4 ]; then
+            echo "FAIL: only $n example files present"
+            exit 1
+          fi
+
+  swiftui:
+    name: swiftui example (typecheck)
+    # SwiftUI can only be typechecked against Apple's SDK, so this job needs a
+    # macOS runner. It is the only way to verify the iOS example at all.
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Typecheck against the iOS simulator SDK
+        run: |
+          set -euo pipefail
+          SDK="$(xcrun --sdk iphonesimulator --show-sdk-path)"
+          echo "SDK: $SDK"
+          xcrun swiftc -typecheck \
+            -sdk "$SDK" \
+            -target arm64-apple-ios17.0-simulator \
+            skills/material-3-frosted/assets/examples/ios-swiftui/GlassChrome.swift
+          echo "swift typecheck ok"
+
+  flutter:
+    name: flutter examples (analyze + run)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: verify/flutter
+    steps:
+      - uses: actions/checkout@v4
+
+      # Pinned, not `channel: stable`: an example that only compiles on the SDK the
+      # skill was verified against is not a verified example. Bump this together
+      # with the version quoted in references/flutter.md.
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: "3.47.7"
+          cache: true
+
+      - name: Stage the skill's examples
+        run: ./tool/sync_examples.sh
+
+      - name: Resolve dependencies
+        run: flutter pub get
+
+      # --fatal-infos: the examples ship to users, so a lint hint is a defect.
+      - name: Analyze
+        run: flutter analyze --fatal-infos
+
+      # Analyze proves the APIs exist. The tests prove the widgets build, lay
+      # out and respond — a widget can typecheck and still throw on first paint.
+      - name: Run widget tests
+        run: flutter test
+
+      - name: Prove the harness analysed something
+        run: |
+          set -e
+          n=$(find lib/examples -name '*.dart' | wc -l)
+          echo "staged example files: $n"
+          if [ "$n" -lt 5 ]; then
+            echo "FAIL: only $n example files staged — analyze checked almost nothing"
+            exit 1
+          fi
+
   # Fast pre-check with no Android SDK. `compile` below is the authoritative one; this job
   # exists so a syntax error fails in ~30 s instead of after the Gradle download.
   kotlin:

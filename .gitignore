@@ -24,3 +24,13 @@ Thumbs.db
 /verify/.gradle/
 /verify/local.properties
 /verify/.kotlin/
+
+# verify/flutter — Dart/Flutter build and staging artifacts
+/verify/flutter/.dart_tool/
+/verify/flutter/build/
+/verify/flutter/.flutter-plugins
+/verify/flutter/.flutter-plugins-dependencies
+/verify/flutter/lib/examples/
+
+# verify/react-native dependencies
+/verify/react-native/node_modules/

@@ -142,12 +142,29 @@ rubric is where that is exercised.
 
 ## Platform support
 
-| | Support |
-|---|---|
-| Jetpack Compose | Primary target |
-| Views / MD2 | Migration path + platform window blur (no composable glass layer) |
-| Flutter | `BackdropFilter` blur only — no refraction/Glass equivalent |
-| Web | Not covered; Material Web is in maintenance mode and does not implement Expressive |
+| Target | Support | Verified by |
+|---|---|---|
+| Jetpack Compose | Full: glass placement, Haze 2 Glass & Blur, expressive layer | `verify/expressive` + `verify/stable` compile |
+| Flutter | Full: glass primitive, grouping, the reduce-transparency gap, M3-in-Flutter | `verify/flutter` analyze + widget tests |
+| React Native / Expo | Full: native iOS 26 glass, expo-blur Android trap, fallbacks | `verify/react-native` typecheck |
+| iOS SwiftUI | Full: `Material`, `.glassEffect`, Reduce Transparency | `swiftc -typecheck` on a macOS runner |
+| Views / MD2 | Migration path + platform window blur (no composable glass layer) | docs only |
+| Web (CSS) | Not covered; Material Web is in maintenance mode and does not implement Expressive | — |
+
+### One design system, four codebases
+
+Each target has its own reference and its own compiled examples, because the platforms do not
+share a primitive:
+
+| | Merging nearby glass | Reduce transparency |
+|---|---|---|
+| Compose + Haze 2.0.1 | ✗ not released (`hazeGlassContainer` is on `main` only) | ✓ system flag |
+| Flutter | ✓ `BackdropGroup` + `BackdropFilter.grouped` | ✗ not exposed — app owns the switch |
+| React Native | ✓ `GlassContainer` (iOS 26) | ✓ `AccessibilityInfo` (iOS only) |
+| SwiftUI | ✓ `GlassEffectContainer` (iOS 26) | ✓ `@Environment(\.accessibilityReduceTransparency)` |
+
+The placement rule is identical on all four; the primitives are not. That is the whole reason
+this skill has per-platform references instead of a translation table.
 
 ### API levels — the real numbers
 

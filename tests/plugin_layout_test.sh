@@ -67,7 +67,17 @@ expect_contains "$SKILL/SKILL.md" "description:"
 
 echo "── portability: no absolute paths ──────────────────────────"
 # Any absolute path to a home dir or this machine's layout is a portability bug.
-if grep -rn --include='*.md' --include='*.py' --include='*.kt' --include='*.json' --include='*.sh' \
+#
+# The scan covers every language the skill now ships (Kotlin, Dart, TypeScript,
+# Swift) plus the docs. Vendored and generated trees are excluded: a dependency's
+# own fixtures say nothing about whether *the skill* is portable, and
+# node_modules alone contains thousands of them.
+if grep -rn --include='*.md' --include='*.py' --include='*.kt' --include='*.kts' \
+     --include='*.dart' --include='*.ts' --include='*.tsx' --include='*.swift' \
+     --include='*.json' --include='*.sh' --include='*.yml' \
+     --exclude-dir=node_modules --exclude-dir=build --exclude-dir=.gradle \
+     --exclude-dir=.dart_tool --exclude-dir=__pycache__ --exclude-dir=.git \
+     --exclude-dir=.agents --exclude-dir=.claude \
      -E '(/home/[a-z]|/Users/[A-Za-z]|C:\\\\Users)' \
      . | grep -v 'tests/plugin_layout_test.sh' | grep -v 'CONTRIBUTING.md'; then
   fail "absolute user paths found (see above) — the skill must work from any path"

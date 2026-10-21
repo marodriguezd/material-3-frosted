@@ -2,14 +2,16 @@
 name: material-3-frosted
 description: >
   The Android 17 / frosted-glass design system for apps: translucent, blurred glass chrome
-  (Haze 2 Glass & Blur, platform window blur) layered over Material 3 Expressive. Covers the
-  glass placement rules, glass over scrolling content, blur fallbacks and reduce-blur
+  layered over Material 3 Expressive. Targets Jetpack Compose (Haze 2 Glass & Blur, platform
+  window blur), Flutter (BackdropFilter, bounded blur, BackdropGroup), React Native / Expo
+  (expo-glass-effect, expo-blur) and iOS SwiftUI (Material, .glassEffect). Covers the glass
+  placement rules, glass over scrolling content, blur fallbacks and reduce-transparency
   accessibility, expressive tokens, spring motion, shape morphing and adaptive layout. Use when
   asked for "frosted glass", "liquid glass", "glassmorphism", "blurred / translucent UI",
   "the Android 17 look", "Cinnamon Bun style", "make my app look modern", "Material 3
-  Expressive", "upgrade / modernize my Android UI", "migrate MD2 to MD3", or to audit an
-  Android app's design-system and glass usage. Primary target: Jetpack Compose; also covers
-  Views/MD2 migration, Flutter, accessibility and performance budgets.
+  Expressive", "upgrade / modernize my Android UI", "migrate MD2 to MD3", "glass in Flutter",
+  "glass in React Native", "liquid glass in SwiftUI", or to audit an app's design-system and
+  glass usage.
 user-invokable: true
 argument-hint: "[audit|upgrade|glass|theme|screen] [path, screen name, or URL]"
 ---
@@ -289,6 +291,10 @@ opaque.
 
 ```
 What is the app built with?
+├─ Flutter                                      → flutter.md  (BackdropFilter, ImageFilterConfig.blur
+│                                                 bounded, BackdropGroup; no expressive theme API)
+├─ React Native / Expo                          → react-native.md
+├─ SwiftUI (iOS)                                → ios-swiftui.md
 ├─ Views + MD2 (com.google.android.material)   → migration-playbook.md § Views→Compose / MD2→MD3
 │                                                 (do NOT add glass until MD3 tokens are in place)
 ├─ Views + MD3 (Material Components 1.14)       → keep Views; adopt MD3 theming + expressive components
@@ -426,6 +432,13 @@ Details: `references/expressive-system.md`.
 
 Load on demand — the tiers are ordered by how often you'll need them.
 
+**Tier 0 — pick the platform**
+| File | Contents |
+|------|----------|
+| `references/flutter.md` | Flutter glass: `BackdropFilter` rules, bounded blur, `BackdropGroup`, the reduce-transparency gap, M3-in-Flutter reality |
+| `references/react-native.md` | Expo/RN: `expo-blur`, Skia, Android blur limits, what each option actually renders |
+| `references/ios-swiftui.md` | SwiftUI: `Material`, `.glassEffect`, and what iOS actually supports per version |
+
 **Tier 1 — always**
 | File | Contents |
 |------|----------|
@@ -449,8 +462,11 @@ Load on demand — the tiers are ordered by how often you'll need them.
 **Assets**
 | Path | Contents |
 |------|----------|
-| `assets/examples/*.kt` | Copy-adapt reference implementations (all compiled in `verify/`) |
+| `assets/examples/*.kt` | Compose implementations (compiled in `verify/expressive` and `verify/stable`) |
 | `assets/examples/stable/` | The material3 1.4.0 theme for apps staying on stable |
+| `assets/examples/flutter/` | Flutter implementations (analysed and widget-tested in `verify/flutter`) |
+| `assets/examples/react-native/` | React Native / Expo implementations (typechecked in `verify/react-native`) |
+| `assets/examples/ios-swiftui/` | SwiftUI implementation (typechecked on a macOS runner) |
 | `assets/templates/audit-report.md` | Report skeleton |
 | `assets/templates/upgrade-plan.md` | Plan skeleton |
 | `scripts/scan_ui.py` | Static UI scanner (Phase 0) |
