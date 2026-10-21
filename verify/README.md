@@ -45,3 +45,19 @@ no `Activity` and no resources. Visual correctness is a design judgment, exercis
 
 JDK 17+ and an Android SDK with the platform AGP asks for (`compileSdk 37`). AGP downloads it
 once the licences are accepted. `local.properties` is gitignored — never commit an `sdk.dir`.
+
+## The other three harnesses
+
+`verify/` is not Android-only any more. Each target has the check its ecosystem can actually
+run, all against the real dependencies:
+
+| Directory | What it does | Proven by |
+|---|---|---|
+| `expressive/`, `stable/` | Compiles the Kotlin examples on material3 1.5.0-beta01 and 1.4.0 | class counts, negative control |
+| `flutter/` | Stages the Dart examples, `flutter analyze --fatal-infos`, runs widget tests | 7 tests, analyzer negative control |
+| `react-native/` | `tsc --noEmit` against expo-blur and expo-glass-effect typings | 4 files, unknown-prop negative control |
+| (SwiftUI) | `swiftc -typecheck` on a macOS runner, in CI only | needs Apple's SDK — there is no Swift on Linux |
+
+Every one of them has the same failure mode to watch: a staging path that resolves to nothing
+makes the check report success while examining zero files. Each job therefore counts its inputs
+and fails below a floor.
