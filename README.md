@@ -4,7 +4,8 @@
 over Material 3 Expressive — with the placement rules, fallbacks and accessibility that separate
 a real Android 17 look from a glassmorphism demo.
 
-[![skills.sh](https://img.shields.io/badge/skills.sh-material--3--frosted-6E56CF)](https://skills.sh/)
+[![skills.sh](https://img.shields.io/badge/skills.sh-material--3--frosted-6E56CF)](https://www.skills.sh/marodriguezd/material-3-frosted)
+[![validate](https://github.com/marodriguezd/material-3-frosted/actions/workflows/validate.yml/badge.svg)](https://github.com/marodriguezd/material-3-frosted/actions/workflows/validate.yml)
 
 ---
 
