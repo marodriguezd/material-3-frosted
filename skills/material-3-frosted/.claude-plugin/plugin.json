@@ -1,0 +1,26 @@
+{
+  "name": "material-3-frosted",
+  "version": "1.0.0",
+  "description": "Android 17 frosted-glass design system: translucent blurred chrome (Haze 2 Glass & Blur, platform window blur) over Material 3 Expressive, with placement rules, fallbacks and accessibility.",
+  "author": {
+    "name": "marodriguezd"
+  },
+  "repository": "https://github.com/marodriguezd/material-3-frosted",
+  "license": "MIT",
+  "keywords": [
+    "material-design",
+    "material3",
+    "material-3-expressive",
+    "frosted-glass",
+    "liquid-glass",
+    "glassmorphism",
+    "blur",
+    "android",
+    "android-17",
+    "jetpack-compose",
+    "haze",
+    "ui",
+    "design-system",
+    "agent-skill"
+  ]
+}

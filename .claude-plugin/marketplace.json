@@ -1,0 +1,38 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "material-3-frosted",
+  "description": "Android 17 frosted-glass design system for Material 3 Expressive — glass chrome, blur, fallbacks and accessibility for Jetpack Compose.",
+  "owner": {
+    "name": "marodriguezd"
+  },
+  "plugins": [
+    {
+      "name": "material-3-frosted",
+      "description": "Build the Android 17 frosted-glass look: translucent blurred chrome over Material 3 Expressive. Includes glass placement rules, Haze 2 Glass/Blur and platform window blur patterns, opaque fallbacks, reduce-blur accessibility, a 12-dimension audit rubric, and a static UI scanner for existing apps.",
+      "author": {
+        "name": "marodriguezd"
+      },
+      "category": "development",
+      "source": {
+        "source": "git-subdir",
+        "url": "https://github.com/marodriguezd/material-3-frosted.git",
+        "path": "skills/material-3-frosted"
+      },
+      "tags": [
+        "material-design",
+        "material3",
+        "material-3-expressive",
+        "frosted-glass",
+        "liquid-glass",
+        "glassmorphism",
+        "blur",
+        "android",
+        "android-17",
+        "jetpack-compose",
+        "haze",
+        "ui",
+        "agent-skill"
+      ]
+    }
+  ]
+}

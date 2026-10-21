@@ -1,0 +1,117 @@
+name: validate
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  layout:
+    name: layout + portability
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Repo layout, manifests, relative refs
+        run: ./tests/plugin_layout_test.sh
+
+  scanner:
+    name: scanner
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Compile
+        run: python3 -m py_compile skills/material-3-frosted/scripts/scan_ui.py
+
+      - name: Fixture — legacy app must produce findings
+        run: |
+          set -e
+          F=/tmp/fixture
+          mkdir -p "$F/app/src/main/res/values"
+          cat > "$F/settings.gradle.kts" <<'EOF'
+          include(":app")
+          EOF
+          cat > "$F/app/build.gradle.kts" <<'EOF'
+          android {
+              compileSdk = 33
+              defaultConfig { targetSdk = 33; minSdk = 24 }
+              dependencies { implementation("com.google.android.material:material:1.9.0") }
+          }
+          EOF
+          cat > "$F/app/src/main/res/values/themes.xml" <<'EOF'
+          <resources>
+              <style name="T" parent="Theme.MaterialComponents.DayNight" />
+          </resources>
+          EOF
+          OUT="$(python3 skills/material-3-frosted/scripts/scan_ui.py "$F" --format text)"
+          echo "$OUT"
+          echo "$OUT" | grep -q "CRITICAL" || { echo "expected a critical finding"; exit 1; }
+          if python3 skills/material-3-frosted/scripts/scan_ui.py "$F" --fail-on critical >/dev/null; then
+            echo "expected --fail-on critical to exit 2"; exit 1
+          fi
+
+      - name: JSON output is valid
+        run: |
+          python3 skills/material-3-frosted/scripts/scan_ui.py . --format json \
+            | python3 -c "import json,sys; json.load(sys.stdin); print('json ok')"
+
+  kotlin:
+    name: kotlin examples parse
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Download kotlinc
+        run: |
+          curl -sL -o kotlin.zip \
+            https://github.com/JetBrains/kotlin/releases/download/v2.1.0/kotlin-compiler-2.1.0.zip
+          unzip -q kotlin.zip
+
+      # The examples are copy-adapt code compiled without the Android SDK, so
+      # "unresolved reference" and everything downstream of it is expected. What must
+      # NOT appear is a genuine syntax error. The positive control at the end proves
+      # the filter still catches one.
+      - name: Fail on anything that is not an unresolved-reference consequence
+        run: |
+          set -uo pipefail
+          KOTLINC=kotlinc/bin/kotlinc
+
+          # Case-insensitive: the compiler emits "cannot infer", not "Cannot infer".
+          CONSEQUENCE='unresolved reference|cannot access|cannot infer|not enough information|argument type mismatch|receiver type mismatch|type mismatch|none of the following|no value passed|too many arguments|cannot find|cannot resolve|compile-time constant|overload resolution|cannot be applied|unsupported|conflicting|cannot be called|does not have a companion|is not abstract|does not implement|must be initialized|val cannot be reassigned|is not a function|has no effect'
+
+          check() {
+            local file="$1" out bad
+            out="$($KOTLINC "$file" -d /tmp/out 2>&1 || true)"
+            bad="$(printf '%s\n' "$out" | grep -iE ': error: ' | grep -ivE "$CONSEQUENCE" || true)"
+            if [ -n "$bad" ]; then
+              printf 'UNEXPECTED COMPILER ERROR in %s:\n%s\n' "$file" "$bad"
+              return 1
+            fi
+            return 0
+          }
+
+          status=0
+          for f in skills/material-3-frosted/assets/examples/*.kt; do
+            check "$f" || status=1
+          done
+
+          # Positive control: a real syntax error must still be caught, otherwise this
+          # filter has become a no-op that passes everything.
+          cp skills/material-3-frosted/assets/examples/FrostedTheme.kt /tmp/control.kt
+          printf '\nfun broken( {\n' >> /tmp/control.kt
+          if check /tmp/control.kt; then
+            echo 'SELF-TEST FAILED: a genuine syntax error was not detected — the filter is too broad'
+            status=1
+          else
+            echo 'self-test ok: genuine syntax error detected'
+          fi
+
+          exit $status
