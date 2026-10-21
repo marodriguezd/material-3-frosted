@@ -197,9 +197,9 @@ Work in reviewable increments, each one shippable. Reference implementations liv
 | `assets/examples/WindowBlur.kt` | Platform window blur (background blur + blur behind) with the enabled/disabled listener |
 | `assets/examples/stable/FrostedThemeStable.kt` | The same theme on material3 **1.4.0**, without the APIs that are `internal` there |
 
-Every file in `assets/examples/` compiles against the real artifacts — the repo's `verify/`
-Gradle project builds them against both material3 1.5.0-beta01 and 1.4.0 on every push. They
-are still examples, not a module: your package name, your colour roles, your strings.
+Every file here compiles against the real artifacts: the repo's `verify/` Gradle project builds
+them against both 1.5.0-beta01 and 1.4.0 on every push. They are examples, not a module — your
+package name, your colour roles, your strings.
 
 Do **not** paste a whole app from these files. Adapt the pattern to the target's own design
 system. If the app has a `ui/theme` package, the upgrade belongs there, not in a parallel
@@ -340,20 +340,17 @@ dependencies {
 ```kotlin
 android {
     compileSdk = 37
-    defaultConfig {
-        targetSdk = 37
-        // Haze 2.0.1 declares minSdk 23 and compiles anywhere. What changes by level is the
-        // effect: real blur on 31+, refraction on 33+, a tinted scrim on 23–30. Set this to
-        // the level at which your design still reads correctly, and get it signed off.
-        minSdk = 23
-    }
+    defaultConfig { targetSdk = 37; minSdk = 23 }   // see the table below before choosing minSdk
 }
 ```
+
+Haze 2.0.1 declares **minSdk 23** and compiles anywhere — what changes by level is the effect.
+Set `minSdk` to the level at which your design still reads correctly, and get it signed off.
 
 | `minSdk` | What glass actually does |
 |----------|--------------------------|
 | 33+ | Blur + refraction on every device |
-| 31–32 | Blur everywhere; glass uses its static highlight/rim fallback |
+| 31–32 | Blur everywhere; static highlight/rim instead of refraction |
 | below 31 | Tinted scrim (`fallbackTint`), not a blur |
 
 Do not design a bar whose legibility depends on a blur you then ship to API 24 devices.
