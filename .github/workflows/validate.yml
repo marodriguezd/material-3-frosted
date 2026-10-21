@@ -68,12 +68,20 @@ jobs:
         with:
           distribution: temurin
           java-version: "21"
-      - uses: android-actions/setup-android@v3
-
-      # AGP downloads whichever SDK platform it needs, but only once the licences are
-      # accepted on the runner.
+      # ubuntu-latest already ships the Android SDK with ANDROID_HOME set, so this job does
+      # not need a setup-android action (and that action currently fails on the image's
+      # cmdline-tools when it tries to install `tools`). Accept the licences here; AGP then
+      # downloads whichever platform `compileSdk` asks for.
       - name: Accept Android SDK licences
-        run: yes | sdkmanager --licenses > /dev/null 2>&1 || true
+        run: |
+          set -uo pipefail
+          SM="$(command -v sdkmanager || echo "${ANDROID_HOME:-$ANDROID_SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager")"
+          yes | "$SM" --licenses > /dev/null 2>&1 || true
+          # Best effort: pre-install what AGP will need. If the package id differs on this
+          # image, AGP's own resolution still gets its chance below.
+          "$SM" --install "platforms;android-37.0" > /dev/null 2>&1 \
+            || echo "pre-install skipped; letting AGP resolve the platform"
+          echo "ANDROID_HOME=${ANDROID_HOME:-unset}"
 
       # The real check: every shipped example, against the real artifacts, on both the
       # expressive (material3 1.5.0-beta01) and stable (1.4.0) paths. This is what catches
